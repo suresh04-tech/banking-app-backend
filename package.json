@@ -1,0 +1,24 @@
+{
+  "name": "createapi",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "type": "module",
+    "start": "node createaccAPI.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "body": "^5.1.0",
+    "express": "^4.21.2",
+    "joi": "^17.13.3",
+    "module": "^1.2.5",
+    "nodemon": "^3.1.7",
+    "parser": "^0.1.4",
+    "pg": "^8.13.1",
+    "uuid": "^11.0.3"
+  }
+}
