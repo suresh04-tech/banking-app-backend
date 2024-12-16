@@ -1,23 +1,33 @@
 import Joi from 'joi';
 
-const customerSchema = Joi.object({
-    username: Joi.string().min(3).max(255).required().messages({
-        'string.empty': 'Username is required.',
-        'string.min': 'Username must be at least 3 characters.',
-        'any.required': 'Username is required.',
+ const createAccountSchema = Joi.object({
+  username: Joi.string().min(3).max(30).required()
+    .messages({
+      'string.base': 'Username must be a string.',
+      'string.empty': 'Username cannot be empty.',
+      'string.min': 'Username must be at least 3 characters long.',
+      'string.max': 'Username cannot exceed 30 characters.',
+      'any.required': 'Username is required.'
     }),
-    phonenum: Joi.string().pattern(/^\d{10}$/).required().messages({
-        'string.pattern.base': 'Phone number must be a 10-digit number.',
-        'any.required': 'Phone number is required.',
+  phonenum: Joi.string().pattern(/^[0-9]{10}$/).required()
+    .messages({
+      'string.pattern.base': 'Phone number must be a 10-digit number.',
+      'string.empty': 'Phone number cannot be empty.',
+      'any.required': 'Phone number is required.'
     }),
-    password: Joi.string().min(6).max(255).required().messages({
-        'string.empty': 'Password is required.',
-        'string.min': 'Password must be at least 6 characters.',
-        'any.required': 'Password is required.'
+  password: Joi.string().min(6).required()
+    .messages({
+      'string.base': 'Password must be a string.',
+      'string.empty': 'Password cannot be empty.',
+      'string.min': 'Password must be at least 6 characters long.',
+      'any.required': 'Password is required.'
     }),
-    ava_bal: Joi.number().optional().allow(null),
-    deposit: Joi.number().optional().allow(null),
-    withdraw: Joi.number().optional().allow(null),
+  deposit: Joi.number().min(1000).required()
+    .messages({
+      'number.base': 'Deposit must be a number.',
+      'number.min': 'Deposit must be at least 1000.',
+      'any.required': 'Deposit is required.'
+    }),
 });
 
-export default customerSchema;
+export default createAccountSchema;
