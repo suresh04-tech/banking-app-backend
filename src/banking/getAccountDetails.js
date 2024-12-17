@@ -1,10 +1,11 @@
 import express from 'express';
-import Database from '../banking/queryDb.js';
+import Database from '../banking/DBfunction.js';
 
 const router = express.Router();
 const db = new Database();
 
-router.get('/', async (req, res) => {
+router.get('/getAccountDetail', async (req, res) => {
+  console.log(req.user);
   try {
     let { accountNumber } = req.body;
 
@@ -13,8 +14,10 @@ router.get('/', async (req, res) => {
     }
 
     accountNumber = BigInt(accountNumber);
+    console.log(accountNumber);
 
-    const accountDetails = await db.getAccountDetails(accountNumber);
+    const accountDetails = await db.getAccDetail(accountNumber);
+    console.log(accountDetails)
 
     res.status(200).json(accountDetails);
   } catch (error) {

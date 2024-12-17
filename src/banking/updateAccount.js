@@ -1,15 +1,16 @@
 import express from 'express';
-import Database from '../banking/queryDb.js';
+import Database from '../banking/DBfunction.js';
 
 const router = express.Router();
 const db = new Database();
 
-router.put('/update/:id', async (req, res, next) => {
-  const { id } = req.params;
-  const { phonenum, username, password } = req.body;
+router.put('/updateAccount', async (req, res) => {
+  console.log('from updateAPI',req.user);
+  const { accountNumber, phonenum, username, password } = req.body; 
 
-  if (!id) {
-    return res.status(400).json({ error: 'ID is required.' });
+
+  if (!accountNumber) {
+    return res.status(400).json({ error: 'Account number is required.' });
   }
 
   if (!phonenum && !username && !password) {
@@ -17,13 +18,15 @@ router.put('/update/:id', async (req, res, next) => {
   }
 
   try {
-    if (phonenum) await db.updateUserField('phonenum', phonenum, id);
-    if (username) await db.updateUserField('username', username, id);
-    if (password) await db.updateUserField('password', password, id);
+
+    if (phonenum) await db.updateUserFieldByAccountNumber('phonenum', phonenum, accountNumber);
+    if (username) await db.updateUserFieldByAccountNumber('username', username, accountNumber);
+    if (password) await db.updateUserFieldByAccountNumber('password', password, accountNumber);
 
     res.status(200).json({ message: 'Update successful' });
   } catch (err) {
-    next(err);
+    console.error("Error updating user details:", err.message);
+    res.status(500).json({ error: 'Failed to update user details.' });
   }
 });
 

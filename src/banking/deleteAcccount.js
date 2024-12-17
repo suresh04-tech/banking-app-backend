@@ -1,10 +1,10 @@
 import express from 'express';
-import Database from '../banking/queryDb.js';
+import Database from '../banking/DBfunction.js';
 
 const router = express.Router();
 const db = new Database();
 
-router.delete('/delete-user', async (req, res, next) => {
+router.delete('/', async (req, res) => {
   let { accountNumber } = req.body;
   accountNumber = BigInt(accountNumber);
 
@@ -24,7 +24,7 @@ router.delete('/delete-user', async (req, res, next) => {
     res.status(200).json({ message: 'User and related records deleted successfully' });
   } catch (err) {
     await db.rollbackTransaction();
-    next(err);
+    console.log('error from deleting',err)
   } finally {
     await db.release();
   }
