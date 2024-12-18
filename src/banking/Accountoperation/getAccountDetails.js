@@ -1,22 +1,19 @@
 import express from 'express';
-import Database from '../banking/DBfunction.js';
+import Database from '../Database file/DBfunction.js';
 
 const router = express.Router();
 const db = new Database();
 
 router.get('/getAccountDetail', async (req, res) => {
-  console.log(req.user);
+  const uuid=req.user.id;
+  console.log(uuid);
   try {
-    let { accountNumber } = req.body;
 
-    if (!accountNumber || isNaN(accountNumber)) {
-      return res.status(400).json({ error: 'Invalid accountNumber' });
+    if (!uuid) {
+      return res.status(400).json({ error: 'uuid' });
     }
 
-    accountNumber = BigInt(accountNumber);
-    console.log(accountNumber);
-
-    const accountDetails = await db.getAccDetail(accountNumber);
+    const accountDetails = await db.getAccDetail(uuid);
     console.log(accountDetails)
 
     res.status(200).json(accountDetails);

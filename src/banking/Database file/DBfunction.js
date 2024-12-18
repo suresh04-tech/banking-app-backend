@@ -1,4 +1,4 @@
-import pool from '../banking/dbconnection.js';
+import pool from './dbconnection.js';
 
 class Database {
   client = null;
@@ -56,7 +56,7 @@ class Database {
   getInsertUserAccountQuery( uuid, accountNumber, timestamp, ava_bal, deposit) {
       return {
         query: `
-          INSERT INTO user_acc (uuid, account_num, data_time, ava_bal, deposit, withdraw) 
+          INSERT INTO user_acc (uuid, account_num, account_created, ava_bal, deposit, withdraw) 
           VALUES ($1, $2, $3, $4, $5, $6)`,
         values: [uuid, accountNumber, timestamp, ava_bal, deposit, 0],
       };
@@ -127,10 +127,10 @@ class Database {
     }
   
 
-  getUserAccountDetailQuery(accountNumber) {
+  getUserAccountDetailQuery(uuid) {
       return {
-        query: `SELECT * FROM user_acc WHERE account_num = $1`,
-        values: [accountNumber],
+        query: `SELECT * FROM user_acc WHERE uuid= $1`,
+        values: [uuid],
       };
     }
 
@@ -143,6 +143,27 @@ class Database {
   
 
   // Database Operations
+ 
+//CreateAccount
+  async generateUniqueAccountNumber() {
+    let isUnique = false;
+    let accountNumber;
+    const client = await this.createClient();
+
+    try {
+      while (!isUnique) {
+        accountNumber = `${Date.now()}${Math.floor(Math.random() * 900) + 100}`.slice(-12);
+        const { query, values } = this.getGenerateUniqueAccountNumberQuery(accountNumber);
+        const result = await client.query(query, values);
+        if (parseInt(result.rows[0].count, 10) === 0) {
+          isUnique = true;
+        }
+      }
+      return accountNumber;
+    } finally {
+      client.release();
+    }
+  }
 
   async insertCustomer({ username, phonenum, password, uuid }) {
     const client = await this.createClient();
@@ -164,6 +185,7 @@ class Database {
     }
   }
 
+  
   async insertUserAccount({ uuid, accountNumber, timestamp, ava_bal, deposit }) {
     const client = await this.createClient();
 console.log('user_acc values',{uuid,accountNumber,timestamp,ava_bal,deposit})
@@ -182,59 +204,6 @@ console.log('user_acc values',{uuid,accountNumber,timestamp,ava_bal,deposit})
       client.release();
     }
   }
-
-
-
- 
-
-  async deleteCustomer(uuid) {
-    const client = await this.getClient();
-
-    try {
-      const { query, values } = this.getDeleteCustomerQuery(uuid);
-      return await client.query(query, values);
-    } finally {
-      client.release();
-    }
-  }
-
-  async deleteUserAccount(uuid) {
-    if(!uuid){
-      console.error('UUID is undefined');
-      throw new Error('UUID is required to delete user')
-    }
-    console.log('this is from db',uuid)
-    const client = await this.getClient();
-
-    try {
-      const { query, values } = this.getDeleteUserAccountQuery(uuid);
-      console.log('executing query',query,'with values',values)
-      return await client.query(query, values);
-    }catch(err){
-      console.log('deteleuser error')
-    }
-  }
-
-  async generateUniqueAccountNumber() {
-    let isUnique = false;
-    let accountNumber;
-    const client = await this.createClient();
-
-    try {
-      while (!isUnique) {
-        accountNumber = `${Date.now()}${Math.floor(Math.random() * 900) + 100}`.slice(-12);
-        const { query, values } = this.getGenerateUniqueAccountNumberQuery(accountNumber);
-        const result = await client.query(query, values);
-        if (parseInt(result.rows[0].count, 10) === 0) {
-          isUnique = true;
-        }
-      }
-      return accountNumber;
-    } finally {
-      client.release();
-    }
-  }
-
 
 
 async getUuidAccountNumber(accountNumber) {
@@ -257,20 +226,28 @@ async getUuidAccountNumber(accountNumber) {
   }
 }
 
-async getAccDetail(accountNumber){
+//login function
+async getCustomerByPhone(phonenum){
+  console.log(phonenum)
+  const client = await this.getClient();
+
+  try {
+      const { query, values } = this.getCustomerDetailsUsingPhonenum(phonenum);
+     
+      const LoginResult=await client.query(query, values);
+      console.log('from dbfunction',LoginResult.rows[0])
+      return await LoginResult
+     
+    }catch{
+      console.log("getCustomerAcountDetails error")
+    }
+}
+
+//GetAccountDetails
+async getAccDetail(uuid){
   const client=await this.createClient();
-  console.log('from db ',accountNumber)
+  console.log('from db ',uuid)
   try{
-    const{query:uuidQuery,values:uuidValues}=this.getAccountDetailsQuery(accountNumber);
-     const getUuidResult= await client.query(uuidQuery,uuidValues);
-     console.log('from dbfun',getUuidResult.rows[0].uuid)
-
-     if (getUuidResult.rows === 0) {
-        throw new Error('Account number not found');
-      }
-
-     const uuid=getUuidResult.rows[0].uuid;
-     console.log('separate from result',uuid)
      const{query,values}=this.getCustomerDetailsQuery(uuid);
      const {rows}=await client.query(query,values);
      const { password, ...getAccDetailResult } = rows[0];
@@ -286,17 +263,11 @@ async getAccDetail(accountNumber){
   }
 }
 // updating function
-async updateUserFieldByAccountNumber(field, value, accountNumber){
+async updateUserFieldByAccountNumber(field, value, uuid){
 
         const client = await this.getClient();
     
         try {
-            const { query: uuidQuery, values: uuidValues } = this.getAccountDetailsQuery(accountNumber);
-            const uuidResult = await client.query(uuidQuery, uuidValues);
-            const { uuid } = uuidResult.rows[0];
-            console.log('from updation',uuid)
-
-
           const { query, values } = this.getUpdateUserFieldQuery(field, value, uuid);
           return await client.query(query, values);
         } finally {
@@ -304,71 +275,63 @@ async updateUserFieldByAccountNumber(field, value, accountNumber){
         }
       }
 
-
-
- 
-
-//with client
-async updateUserBalance(client,accountNumber, newBalance) {
+//Transaction
+async getAccountDetails(client,uuid) {
 
   try {
-    const { query: uuidQuery, values: uuidValues } = this.getAccountDetailsQuery(accountNumber);
-    const uuidResult = await client.query(uuidQuery, uuidValues);
-
-    if (uuidResult.rows === 0) {
-      throw new Error('Account number not found');
-    }
-
-    const { uuid } = uuidResult.rows[0];
-    const { query: updateQuery, values: updateValues } = this.getUpdateUserBalanceQuery(newBalance, uuid);
-    return await client.query(updateQuery, updateValues);
-  } finally {
-    client.release();
+    const { query, values } = this.getCustomerDetailsQuery(uuid);
+    return await client.query(query,values);
+  }catch(err){
+    console.log("ERROR in  getCustomerDetails")
   }
 }
 
-async userAccountDetail(client,accountNumber) {
+async userAccountDetail(client,uuid) {
   try {
-    const { query, values } = this.getUserAccountDetailQuery(accountNumber);
+    const { query, values } = this.getUserAccountDetailQuery(uuid);
     return await client.query(query, values);
   }catch{
     console.log("getuserAccountDetail error")
   }
 }
 
-async getAccountDetails(client,accountNumber) {
+async updateUserBalance(client,uuid, newBalance) {
 
   try {
-    const { query, values } = this.getAccountDetailsQuery(accountNumber);
-    const uuidResult = await client.query(query, values);
-
-    if (uuidResult.rows.length === 0) {
-      throw new Error('Account number not found');
-    }
-
-    const { uuid } = uuidResult.rows[0];
-    const { query: detailsQuery, values: detailsValues } = this.getCustomerDetailsQuery(uuid);
-    return await client.query(detailsQuery, detailsValues);
-  }catch(err){
-    console.log("getaccountdetail error")
+       const { query, values } = this.getUpdateUserBalanceQuery(newBalance, uuid);
+    return await client.query(query,values);
+  } finally {
+    client.release();
   }
 }
-//login function
-async getCustomerByPhone(phonenum){
-    console.log(phonenum)
-    const client = await this.getClient();
 
-    try {
-        const { query, values } = this.getCustomerDetailsUsingPhonenum(phonenum);
-       
-        const LoginResult=await client.query(query, values);
-        console.log('from dbfunction',LoginResult.rows[0])
-        return await LoginResult
-       
-      }catch{
-        console.log("getCustomerAcountDetails error")
-      }
+ //DeteleUserAccount
+ async deleteUserAccount(uuid) {
+  if(!uuid){
+    console.error('UUID is undefined');
+    throw new Error('UUID is required to delete user')
+  }
+  console.log('this is from db',uuid)
+  const client = await this.getClient();
+
+  try {
+    const { query, values } = this.getDeleteUserAccountQuery(uuid);
+    console.log('executing query',query,'with values',values)
+    return await client.query(query, values);
+  }catch(err){
+    console.log('deteleuser error')
+  }
+}
+
+async deleteCustomer(uuid) {
+  const client = await this.getClient();
+
+  try {
+    const { query, values } = this.getDeleteCustomerQuery(uuid);
+    return await client.query(query, values);
+  } finally {
+    client.release();
+  }
 }
 }
-
 export default Database;

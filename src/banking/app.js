@@ -1,11 +1,11 @@
 import express from 'express';
-import createAccountRouter from '../banking/createAccount.js';
-import getAccountDetailsRouter from '../banking/getAccountDetails.js';
-import updateAccountRouter from '../banking/updateAccount.js';
-import deleteAccountRouter from '../banking/deleteAcccount.js';
-import transactionRouter from '../banking/transaction.js';
-import loginRouter from '../banking/login.js';
-import verifyToken from './authentication.js';
+import createAccountRouter from './AccountCreation/createAccount.js';
+import getAccountDetailsRouter from './Accountoperation/getAccountDetails.js';
+import updateAccountRouter from './Accountoperation/updateAccount.js';
+import deleteAccountRouter from './Accountoperation/deleteAcccount.js';
+import transactionRouter from './Accountoperation/transaction.js';
+import loginRouter from './AccountCreation/login.js';
+import verifyToken from './validation files/authentication.js';
 
 const app = express();
 app.use(express.json());

@@ -1,8 +1,8 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt'; 
-import Database from '../banking/DBfunction.js';
-import createAccountSchema from '../banking/validation.js';
+import Database from '../Database file/DBfunction.js';
+import {createAccountSchema} from '../validation files/validation.js'
 
 const router = express.Router();
 const db = new Database();

@@ -1,16 +1,18 @@
 import express from 'express';
-import Database from '../banking/DBfunction.js';
+import Database from '../Database file/DBfunction.js';
 
 const router = express.Router();
 const db = new Database();
 
-router.post('/', async (req, res) => {
-  const { accountNumber, password, deposit = 0, withdraw = 0 } = req.body;
+router.post('/transaction', async (req, res) => {
+  const uuid = req.user.id;
+  console.log(uuid)
+  const { deposit = 0, withdraw = 0 } = req.body;
   const Deposit = Number(deposit);
 
-  if (!accountNumber || !password || (Deposit === 0 && withdraw === 0)) {
+  if ((Deposit === 0 && withdraw === 0)) {
     return res.status(400).json({
-      error: 'accountNumber, password, and deposit or withdraw are required.',
+      error: 'Deposit or withdraw are required.',
     });
   }
 
@@ -20,20 +22,21 @@ router.post('/', async (req, res) => {
     client = await db.createClient();
     await client.query('BEGIN');
 
-    const accountResult = await db.getAccountDetails(client, accountNumber);
+    const accountResult = await db.getAccountDetails(client, uuid);
     if (accountResult.rows === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Account not found' });
     }
 
     const account = accountResult.rows[0];
+    console.log('ACCOUNT Detial',account)
 
-    if (account.password !== password) {
+    if (account.id !== uuid) {
       await client.query('ROLLBACK');
-      return res.status(401).json({ error: 'Invalid password' });
+      return res.status(401).json({ error: 'Invalid Account Transaction' });
     }
 
-    const userAccountResult = await db.userAccountDetail(client, accountNumber);
+    const userAccountResult = await db.userAccountDetail(client, uuid);
     const currentBalance = userAccountResult.rows[0].ava_bal;
 
     let newBalance;
@@ -55,7 +58,7 @@ router.post('/', async (req, res) => {
       newBalance = currentBalance - withdraw;
     }
 
-    await db.updateUserBalance(client, accountNumber, newBalance);
+    await db.updateUserBalance(client, uuid, newBalance);
 
     await client.query('COMMIT');
 
